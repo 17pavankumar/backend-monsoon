@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home - Monsoon Data Clock{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/dashboard.css' %}" rel="stylesheet">
+<style>
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 70vh;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><defs><radialGradient id="a" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="%23ffffff" stop-opacity="0.1"/><stop offset="100%" stop-color="%23ffffff" stop-opacity="0"/></radialGradient></defs><circle cx="25" cy="10" r="10" fill="url(%23a)"/><circle cx="75" cy="10" r="10" fill="url(%23a)"/></svg>') repeat;
+    animation: float 20s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+.feature-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+.stats-card {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 20px;
+    padding: 2rem;
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: scale(1.05);
+}
+
+.eco-tip-card {
+    background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+    border-radius: 15px;
+    padding: 1.5rem;
+    color: #2c3e50;
+    height: 100%;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section d-flex align-items-center">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <div class="hero-content position-relative z-3">
+                    <h1 class="display-4 fw-bold mb-4">
+                        <i class="fas fa-cloud-rain me-3"></i>
+                        Monsoon Data Clock
+                    </h1>
+                    <p class="lead mb-4">
+                        Track real-time environmental data, monitor air quality, rainfall patterns, 
+                        and water levels to make informed decisions for sustainable living during monsoon season.
+                    </p>
+                    <div class="d-flex gap-3 flex-wrap">
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-light btn-lg">
+                            <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                        </a>
+                        {% else %}
+                        <a href="{% url 'signup' %}" class="btn btn-light btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Get Started
+                        </a>
+                        <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="hero-animation text-center position-relative z-3">
+                    <div class="weather-widget p-4 bg-white bg-opacity-10 rounded-4 backdrop-blur">
+                        <h5 class="mb-3">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            {% if user.is_authenticated %}{{ user.city|default:"Your City" }}{% else %}Chennai{% endif %}
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="mini-card bg-white bg-opacity-20 p-3 rounded-3">
+                                    <i class="fas fa-thermometer-half display-6 mb-2"></i>
+                                    <h6>Temperature</h6>
+                                    <p class="mb-0">28°C</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mini-card bg-white bg-opacity-20 p-3 rounded-3">
+                                    <i class="fas fa-wind display-6 mb-2"></i>
+                                    <h6>Air Quality</h6>
+                                    <p class="mb-0">Moderate</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mini-card bg-white bg-opacity-20 p-3 rounded-3">
+                                    <i class="fas fa-cloud-rain display-6 mb-2"></i>
+                                    <h6>Rainfall</h6>
+                                    <p class="mb-0">15mm</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mini-card bg-white bg-opacity-20 p-3 rounded-3">
+                                    <i class="fas fa-water display-6 mb-2"></i>
+                                    <h6>Water Level</h6>
+                                    <p class="mb-0">Normal</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold mb-4">Comprehensive Environmental Monitoring</h2>
+            <p class="lead text-muted">Everything you need to stay informed about your local environment</p>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="card feature-card h-100 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-cloud-rain display-4 text-primary"></i>
+                        </div>
+                        <h5 class="card-title">Weather Tracking</h5>
+                        <p class="card-text text-muted">
+                            Real-time weather data including temperature, humidity, rainfall, and wind speed
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="card feature-card h-100 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-wind display-4 text-success"></i>
+                        </div>
+                        <h5 class="card-title">Air Quality Index</h5>
+                        <p class="card-text text-muted">
+                            Monitor PM2.5, PM10, Ozone levels and get health recommendations
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="card feature-card h-100 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-water display-4 text-info"></i>
+                        </div>
+                        <h5 class="card-title">Water Level Alerts</h5>
+                        <p class="card-text text-muted">
+                            Stay updated on water levels in rivers, lakes, and dams with real-time alerts
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="card feature-card h-100 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-users display-4 text-warning"></i>
+                        </div>
+                        <h5 class="card-title">Community Reports</h5>
+                        <p class="card-text text-muted">
+                            Report and track waterlogging, pollution, and other environmental issues
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card">
+                    <i class="fas fa-users display-4 mb-3"></i>
+                    <h3>{{ total_users }}+</h3>
+                    <p class="mb-0">Active Users</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card">
+                    <i class="fas fa-map-marker-alt display-4 mb-3"></i>
+                    <h3>{{ cities_covered }}+</h3>
+                    <p class="mb-0">Cities Covered</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card">
+                    <i class="fas fa-flag display-4 mb-3"></i>
+                    <h3>{{ reports_today }}+</h3>
+                    <p class="mb-0">Reports Today</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card">
+                    <i class="fas fa-chart-line display-4 mb-3"></i>
+                    <h3>24/7</h3>
+                    <p class="mb-0">Data Monitoring</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Eco Tips Section -->
+{% if recent_tips %}
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold mb-4">Eco-Friendly Tips</h2>
+            <p class="lead text-muted">Learn how to live sustainably during monsoon season</p>
+        </div>
+        
+        <div class="row g-4">
+            {% for tip in recent_tips %}
+            <div class="col-lg-4 col-md-6">
+                <div class="eco-tip-card">
+                    <div class="d-flex align-items-start mb-3">
+                        <i class="fas fa-leaf display-6 me-3 text-success"></i>
+                        <div>
+                            <h5 class="mb-2">{{ tip.title }}</h5>
+                            <span class="badge bg-success bg-opacity-20 text-success">
+                                {{ tip.get_category_display }}
+                            </span>
+                        </div>
+                    </div>
+                    <p class="mb-3">{{ tip.content|truncatewords:25 }}</p>
+                    <a href="{% url 'eco_tips' %}?category={{ tip.category }}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-arrow-right me-1"></i>Learn More
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{% url 'eco_tips' %}" class="btn btn-success btn-lg">
+                <i class="fas fa-leaf me-2"></i>View All Tips
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Call to Action -->
+{% if not user.is_authenticated %}
+<section class="py-5 bg-primary text-white">
+    <div class="container text-center">
+        <h2 class="display-5 fw-bold mb-4">Ready to Get Started?</h2>
+        <p class="lead mb-4">
+            Join thousands of users monitoring environmental data and contributing to a sustainable future
+        </p>
+        <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a href="{% url 'signup' %}" class="btn btn-light btn-lg">
+                <i class="fas fa-user-plus me-2"></i>Create Account
+            </a>
+            <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
