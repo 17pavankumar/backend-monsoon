@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Community Reports - Monsoon Data Clock{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <h1 class="h2 fw-bold text-primary">
+                <i class="fas fa-users me-2"></i>Community Reports
+            </h1>
+            <p class="text-muted">Help your community by reporting environmental issues and tracking their resolution</p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <a href="{% url 'create_report' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus me-2"></i>New Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Report Type</label>
+                            <select name="type" class="form-select">
+                                <option value="all" {% if current_filters.type == 'all' %}selected{% endif %}>All Types</option>
+                                {% for value, label in report_types %}
+                                <option value="{{ value }}" {% if current_filters.type == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">City</label>
+                            <select name="city" class="form-select">
+                                <option value="">All Cities</option>
+                                {% for city in cities %}
+                                <option value="{{ city }}" {% if current_filters.city == city %}selected{% endif %}>
+                                    {{ city }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Severity</label>
+                            <select name="severity" class="form-select">
+                                <option value="all" {% if current_filters.severity == 'all' %}selected{% endif %}>All Levels</option>
+                                {% for value, label in severity_levels %}
+                                <option value="{{ value }}" {% if current_filters.severity == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="all" {% if current_filters.status == 'all' %}selected{% endif %}>All Status</option>
+                                {% for value, label in status_choices %}
+                                <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Search</label>
+                            <div class="input-group">
+                                <input type="text" name="search" class="form-control" 
+                                       placeholder="Search reports..." value="{{ current_filters.search }}">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports List -->
+    <div class="row">
+        <div class="col-12">
+            {% if page_obj.object_list %}
+            <div class="row g-4">
+                {% for report in page_obj.object_list %}
+                <div class="col-lg-6 col-xl-4">
+                    <div class="card report-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title mb-0">
+                                    <a href="{% url 'report_detail' report.id %}" class="text-decoration-none">
+                                        {{ report.title|truncatechars:50 }}
+                                    </a>
+                                </h5>
+                                <span class="badge bg-{{ report.severity }} severity-badge">
+                                    {{ report.get_severity_display }}
+                                </span>
+                            </div>
+
+                            <p class="card-text text-muted mb-3">
+                                {{ report.description|truncatechars:120 }}
+                            </p>
+
+                            <div class="report-meta mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-map-marker-alt text-muted me-2"></i>
+                                    <small class="text-muted">{{ report.location }}, {{ report.city }}</small>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-tag text-muted me-2"></i>
+                                    <small class="text-muted">{{ report.get_report_type_display }}</small>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user text-muted me-2"></i>
+                                    <small class="text-muted">{{ report.reporter_name }}</small>
+                                    <span class="ms-auto">
+                                        <small class="text-muted">{{ report.created_at|timesince }} ago</small>
+                                    </span>
+                                </div>
+                            </div>
+
+                            {% if report.image %}
+                            <div class="report-image mb-3">
+                                <img src="{{ report.image.url }}" class="img-fluid rounded" 
+                                     alt="{{ report.title }}" style="max-height: 150px; width: 100%; object-fit: cover;">
+                            </div>
+                            {% endif %}
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="vote-section">
+                                    <button class="btn btn-sm btn-outline-success me-2" 
+                                            onclick="voteReport({{ report.id }}, 'up')">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span class="vote-count-up">{{ report.upvotes }}</span>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            onclick="voteReport({{ report.id }}, 'down')">
+                                        <i class="fas fa-arrow-down"></i>
+                                        <span class="vote-count-down">{{ report.downvotes }}</span>
+                                    </button>
+                                </div>
+                                <span class="badge bg-{{ report.status }} status-badge">
+                                    {{ report.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Reports pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <!-- No Reports -->
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-clipboard-list display-1 text-muted"></i>
+                </div>
+                <h3 class="text-muted mb-3">No Reports Found</h3>
+                <p class="text-muted mb-4">
+                    {% if current_filters.search or current_filters.type != 'all' or current_filters.city or current_filters.severity != 'all' or current_filters.status != 'all' %}
+                        No reports match your current filters. Try adjusting your search criteria.
+                    {% else %}
+                        Be the first to report an environmental issue in your community!
+                    {% endif %}
+                </p>
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="{% url 'create_report' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create First Report
+                    </a>
+                    {% if current_filters.search or current_filters.type != 'all' or current_filters.city or current_filters.severity != 'all' or current_filters.status != 'all' %}
+                    <a href="{% url 'community_reports' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Clear Filters
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.report-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e3e6f0;
+}
+
+.report-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.severity-badge.bg-low { background-color: #28a745 !important; }
+.severity-badge.bg-medium { background-color: #ffc107 !important; color: #000; }
+.severity-badge.bg-high { background-color: #fd7e14 !important; }
+.severity-badge.bg-critical { background-color: #dc3545 !important; }
+
+.status-badge.bg-pending { background-color: #6c757d !important; }
+.status-badge.bg-verified { background-color: #17a2b8 !important; }
+.status-badge.bg-resolved { background-color: #28a745 !important; }
+.status-badge.bg-rejected { background-color: #dc3545 !important; }
+
+.vote-section .btn {
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.report-image img {
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.report-image img:hover {
+    transform: scale(1.05);
+}
+
+.report-meta small {
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .vote-section .btn {
+        width: 30px;
+        height: 30px;
+        font-size: 0.875rem;
+    }
+    
+    .card-title {
+        font-size: 1.1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Vote on report
+async function voteReport(reportId, voteType) {
+    try {
+        const response = await fetch(`/community/reports/${reportId}/vote/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ vote_type: voteType })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update vote counts in UI
+            const upCountElement = document.querySelector(`button[onclick="voteReport(${reportId}, 'up')"] .vote-count-up`);
+            const downCountElement = document.querySelector(`button[onclick="voteReport(${reportId}, 'down')"] .vote-count-down`);
+            
+            if (upCountElement) upCountElement.textContent = data.upvotes;
+            if (downCountElement) downCountElement.textContent = data.downvotes;
+            
+            // Show feedback
+            showToast(getVoteMessage(data.action, voteType), 'success');
+        } else {
+            showToast(data.error || 'Failed to vote', 'error');
+        }
+    } catch (error) {
+        console.error('Error voting:', error);
+        showToast('Network error. Please try again.', 'error');
+    }
+}
+
+// Get vote message based on action
+function getVoteMessage(action, voteType) {
+    const voteWord = voteType === 'up' ? 'upvote' : 'downvote';
+    
+    switch(action) {
+        case 'created': return `Your ${voteWord} has been recorded.`;
+        case 'changed': return `Your vote has been changed to ${voteWord}.`;
+        case 'removed': return `Your ${voteWord} has been removed.`;
+        default: return 'Vote updated.';
+    }
+}
+
+// Show toast notification
+function showToast(message, type) {
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" 
+             role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" 
+                        data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    
+    // Create toast container if it doesn't exist
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '1055';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Add toast
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    // Initialize and show toast
+    const toastElement = toastContainer.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Remove toast element after it's hidden
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+
+// Handle image click to show modal
+document.addEventListener('click', function(e) {
+    if (e.target.matches('.report-image img')) {
+        showImageModal(e.target.src, e.target.alt);
+    }
+});
+
+// Show image in modal
+function showImageModal(src, alt) {
+    const modalHtml = `
+        <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${alt}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img src="${src}" class="img-fluid" alt="${alt}">
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal
+    const existingModal = document.getElementById('imageModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add new modal
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+    modal.show();
+    
+    // Clean up modal after hide
+    document.getElementById('imageModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+// Auto-submit form on filter change
+document.addEventListener('change', function(e) {
+    if (e.target.matches('select[name="type"], select[name="city"], select[name="severity"], select[name="status"]')) {
+        e.target.form.submit();
+    }
+});
+</script>
+{% endblock %}
