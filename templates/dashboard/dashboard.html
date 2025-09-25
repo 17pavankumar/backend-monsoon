@@ -1,0 +1,383 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - {{ user_city }} - Monsoon Data Clock{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/dashboard.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 fw-bold text-primary">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </h1>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        {{ user_city }} - Last updated: <span id="last-updated">{{ weather_data.recorded_at|date:"M d, Y H:i" }}</span>
+                    </p>
+                </div>
+                <button class="btn btn-outline-primary" onclick="refreshData()">
+                    <i class="fas fa-sync-alt me-2"></i>Refresh Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card weather-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon">
+                            <i class="fas fa-thermometer-half"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-1">
+                                {% if weather_data %}{{ weather_data.temperature|floatformat:1 }}°C{% else %}--{% endif %}
+                            </h3>
+                            <p class="text-muted mb-0">Temperature</p>
+                            {% if weather_data %}
+                            <small class="text-success">
+                                <i class="fas fa-eye me-1"></i>{{ weather_data.weather_description|capfirst }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card air-quality-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon">
+                            <i class="fas fa-wind"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-1">
+                                {% if air_quality_data %}{{ air_quality_data.aqi }}{% else %}--{% endif %}
+                            </h3>
+                            <p class="text-muted mb-0">Air Quality Index</p>
+                            {% if air_quality_data %}
+                            <small style="color: {{ air_quality_data.aqi_color }}">
+                                <i class="fas fa-circle me-1"></i>{{ air_quality_data.aqi_category }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card rainfall-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon">
+                            <i class="fas fa-cloud-rain"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-1">
+                                {% if weather_data %}{{ weather_data.rainfall|floatformat:1 }}mm{% else %}--{% endif %}
+                            </h3>
+                            <p class="text-muted mb-0">Rainfall</p>
+                            <small class="text-info">
+                                <i class="fas fa-droplet me-1"></i>Today
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card humidity-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon">
+                            <i class="fas fa-tint"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-1">
+                                {% if weather_data %}{{ weather_data.humidity|floatformat:0 }}%{% else %}--{% endif %}
+                            </h3>
+                            <p class="text-muted mb-0">Humidity</p>
+                            {% if weather_data %}
+                            <small class="text-primary">
+                                <i class="fas fa-compress-arrows-alt me-1"></i>{{ weather_data.pressure|floatformat:0 }} hPa
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Weather Forecast -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>3-Day Forecast
+                    </h5>
+                    <a href="{% url 'weather_details' %}" class="btn btn-sm btn-outline-primary">
+                        View Details
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if forecast %}
+                    <div class="forecast-container">
+                        {% for day in forecast|slice:":3" %}
+                        <div class="forecast-item">
+                            <div class="forecast-date">
+                                {{ day.datetime|date:"M j" }}
+                            </div>
+                            <div class="forecast-temp">
+                                {{ day.temperature|floatformat:1 }}°C
+                            </div>
+                            <div class="forecast-desc">
+                                {{ day.description|capfirst }}
+                            </div>
+                            {% if day.rainfall > 0 %}
+                            <div class="forecast-rain">
+                                <i class="fas fa-cloud-rain text-primary"></i>
+                                {{ day.rainfall|floatformat:1 }}mm
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Forecast data not available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Water Level Alerts -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-water me-2"></i>Water Level Status
+                    </h5>
+                    <a href="{% url 'water_levels' %}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if water_levels %}
+                    {% for level in water_levels|slice:":3" %}
+                    <div class="water-level-item mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">{{ level.location_name }}</h6>
+                            <span class="badge badge-{{ level.alert_status }}">
+                                {{ level.get_alert_status_display }}
+                            </span>
+                        </div>
+                        <div class="progress mb-1" style="height: 8px;">
+                            <div class="progress-bar progress-bar-{{ level.alert_status }}" 
+                                 style="width: {{ level.level_percentage }}%"></div>
+                        </div>
+                        <small class="text-muted">
+                            Current: {{ level.current_level }}m | Normal: {{ level.normal_level }}m
+                        </small>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted">Water level data not available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Community Reports -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Community Reports
+                    </h5>
+                    <a href="{% url 'community_reports' %}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_reports %}
+                    {% for report in recent_reports %}
+                    <div class="report-item mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-1">
+                                <a href="{% url 'report_detail' report.id %}" class="text-decoration-none">
+                                    {{ report.title|truncatewords:8 }}
+                                </a>
+                            </h6>
+                            <span class="badge bg-{{ report.severity }}">
+                                {{ report.get_severity_display }}
+                            </span>
+                        </div>
+                        <p class="text-muted small mb-2">
+                            <i class="fas fa-map-marker-alt me-1"></i>{{ report.location }}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                {{ report.created_at|timesince }} ago by {{ report.reporter_name }}
+                            </small>
+                            <div>
+                                <small class="text-success me-2">
+                                    <i class="fas fa-arrow-up"></i>{{ report.upvotes }}
+                                </small>
+                                <small class="text-danger">
+                                    <i class="fas fa-arrow-down"></i>{{ report.downvotes }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted">No recent reports in your area</p>
+                    <a href="{% url 'create_report' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-2"></i>Create First Report
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Eco Tips -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-leaf me-2"></i>Eco Tips
+                    </h5>
+                    <a href="{% url 'eco_tips' %}" class="btn btn-sm btn-outline-success">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if eco_tips %}
+                    {% for tip in eco_tips|slice:":3" %}
+                    <div class="eco-tip mb-3">
+                        <h6 class="mb-2">
+                            <i class="fas fa-lightbulb text-warning me-2"></i>{{ tip.title }}
+                        </h6>
+                        <p class="text-muted small mb-2">{{ tip.content|truncatewords:20 }}</p>
+                        <span class="badge bg-success bg-opacity-10 text-success">
+                            {{ tip.get_category_display }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted">Eco tips will appear here</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Alerts -->
+    {% if user_alerts %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bell me-2"></i>Recent Alerts
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for alert in user_alerts %}
+                    <div class="alert alert-{{ alert.severity }} alert-dismissible fade show" role="alert">
+                        <strong>{{ alert.get_alert_type_display }}:</strong> {{ alert.message }}
+                        <small class="text-muted d-block">{{ alert.created_at|timesince }} ago</small>
+                        <button type="button" class="btn-close" onclick="markAlertRead({{ alert.id }})" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/dashboard.js' %}"></script>
+<script>
+// Dashboard specific JavaScript
+function refreshData() {
+    const button = document.querySelector('button[onclick="refreshData()"]');
+    const icon = button.querySelector('i');
+    
+    // Add loading state
+    icon.classList.remove('fa-sync-alt');
+    icon.classList.add('fa-spinner', 'fa-spin');
+    button.disabled = true;
+    
+    fetch('{% url "dashboard_data" %}')
+        .then(response => response.json())
+        .then(data => {
+            // Update the UI with new data
+            updateDashboardData(data);
+            document.getElementById('last-updated').textContent = new Date().toLocaleString();
+        })
+        .catch(error => {
+            console.error('Error refreshing data:', error);
+            alert('Failed to refresh data. Please try again.');
+        })
+        .finally(() => {
+            // Remove loading state
+            icon.classList.remove('fa-spinner', 'fa-spin');
+            icon.classList.add('fa-sync-alt');
+            button.disabled = false;
+        });
+}
+
+function updateDashboardData(data) {
+    if (data.weather) {
+        // Update weather data in the UI
+        document.querySelector('.weather-card h3').textContent = 
+            data.weather.temperature.toFixed(1) + '°C';
+        document.querySelector('.rainfall-card h3').textContent = 
+            data.weather.rainfall.toFixed(1) + 'mm';
+        document.querySelector('.humidity-card h3').textContent = 
+            data.weather.humidity.toFixed(0) + '%';
+    }
+    
+    if (data.air_quality) {
+        // Update air quality data in the UI
+        document.querySelector('.air-quality-card h3').textContent = data.air_quality.aqi;
+        const categoryElement = document.querySelector('.air-quality-card small');
+        categoryElement.style.color = data.air_quality.color;
+        categoryElement.innerHTML = `<i class="fas fa-circle me-1"></i>${data.air_quality.category}`;
+    }
+}
+
+function markAlertRead(alertId) {
+    fetch(`/dashboard/alert/${alertId}/mark-read/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Alert will be hidden by Bootstrap's alert dismissal
+        }
+    })
+    .catch(error => console.error('Error marking alert as read:', error));
+}
+</script>
+{% endblock %}
