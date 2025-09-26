@@ -294,6 +294,10 @@ function setupRealTimeValidation(form) {
     const fields = form.querySelectorAll('input[required], input[type="email"]');
     
     fields.forEach(field => {
+        field.addEventListener('blur', function() {
+            validateField(this);
+        });
+        
         field.addEventListener('input', function() {
             // Clear error on input
             if (this.classList.contains('is-invalid')) {
@@ -486,6 +490,8 @@ function setupDemoCredentials() {
     
     // Add hover effect
     demoCredentials.style.cursor = 'pointer';
+    demoCredentials.style.transition = 'transform 0.3s ease';
+    
     demoCredentials.addEventListener('mouseenter', function() {
         this.style.transform = 'scale(1.02)';
     });
@@ -799,6 +805,78 @@ function submitFormAjax(form, successCallback, errorCallback) {
     });
 }
 
+// Advanced form validation
+function validateFormAdvanced(form) {
+    const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+    let isValid = true;
+    
+    inputs.forEach(input => {
+        if (!input.value.trim()) {
+            showFieldError(input.name, `${input.labels[0]?.textContent || input.name} is required`);
+            isValid = false;
+        }
+    });
+    
+    return isValid;
+}
+
+// Password strength meter update
+function updatePasswordMeter(password) {
+    const meter = document.querySelector('.password-meter');
+    if (!meter) return;
+    
+    let strength = 0;
+    const checks = [
+        password.length >= 8,
+        /[a-z]/.test(password),
+        /[A-Z]/.test(password),
+        /[0-9]/.test(password),
+        /[^A-Za-z0-9]/.test(password)
+    ];
+    
+    strength = checks.filter(Boolean).length;
+    
+    const strengthLabels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+    const strengthColors = ['#ff4757', '#ff6b7a', '#ffa726', '#26c6da', '#26a69a'];
+    
+    meter.style.width = (strength * 20) + '%';
+    meter.style.backgroundColor = strengthColors[strength - 1] || '#ff4757';
+    
+    const label = meter.nextElementSibling;
+    if (label) {
+        label.textContent = strengthLabels[strength - 1] || 'Very Weak';
+        label.style.color = strengthColors[strength - 1] || '#ff4757';
+    }
+}
+
+// Auto-save form data
+function setupAutoSave(form) {
+    const inputs = form.querySelectorAll('input, textarea, select');
+    const formId = form.id || 'form';
+    
+    inputs.forEach(input => {
+        // Load saved data
+        const savedValue = localStorage.getItem(`${formId}_${input.name}`);
+        if (savedValue && !input.value) {
+            input.value = savedValue;
+        }
+        
+        // Save on change
+        input.addEventListener('input', function() {
+            localStorage.setItem(`${formId}_${input.name}`, this.value);
+        });
+    });
+    
+    // Clear saved data on successful submit
+    form.addEventListener('submit', function() {
+        if (form.checkValidity()) {
+            inputs.forEach(input => {
+                localStorage.removeItem(`${formId}_${input.name}`);
+            });
+        }
+    });
+}
+
 // Export functions for global access
 window.validateLoginForm = validateLoginForm;
 window.validateSignupForm = validateSignupForm;
@@ -806,8 +884,6 @@ window.showFieldError = showFieldError;
 window.clearFieldError = clearFieldError;
 window.showFormLoading = showFormLoading;
 window.hideFormLoading = hideFormLoading;
-window.submitFormAjax = submitFormAjax;blur', function() {
-            validateField(this);
-        });
-        
-        field.addEventListener('
+window.submitFormAjax = submitFormAjax;
+window.setupAutoSave = setupAutoSave;
+window.handleNetworkError = handleNetworkError;
