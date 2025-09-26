@@ -9,6 +9,8 @@ import json
 from .models import WeatherData, AirQualityData, WaterLevel, EcoTip, UserAlert
 from .services import DataService, WaterLevelService, WeatherService
 from community.models import CommunityReport
+from community.models import CommunityReport
+
 
 def home(request):
     """Home page with basic information"""
@@ -220,3 +222,219 @@ def get_dashboard_data(request):
         }
     
     return JsonResponse(response_data)
+
+# Additional API endpoints
+
+@login_required
+def get_weather_data(request, city):
+    """API endpoint for weather data"""
+    weather_data = DataService.get_recent_data(city)['weather']
+    
+    if weather_data:
+        data = {
+            'city': weather_data.city,
+            'temperature': weather_data.temperature,
+            'humidity': weather_data.humidity,
+            'pressure': weather_data.pressure,
+            'rainfall': weather_data.rainfall,
+            'wind_speed': weather_data.wind_speed,
+            'description': weather_data.weather_description,
+            'recorded_at': weather_data.recorded_at.isoformat()
+        }
+        return JsonResponse(data)
+    
+    return JsonResponse({'error': 'Weather data not available'}, status=404)
+
+@login_required
+def get_forecast_data(request, city):
+    """API endpoint for forecast data"""
+    forecast = WeatherService.get_forecast(city, days=7)
+    
+    forecast_data = []
+    for item in forecast:
+        forecast_data.append({
+            'datetime': item['datetime'].isoformat(),
+            'temperature': item['temperature'],
+            'humidity': item['humidity'],
+            'description': item['description'],
+            'rainfall': item['rainfall'],
+            'wind_speed': item['wind_speed']
+        })
+    
+    return JsonResponse({'forecast': forecast_data})
+
+@login_required
+def get_air_quality_data(request, city):
+    """API endpoint for air quality data"""
+    air_quality_data = DataService.get_recent_data(city)['air_quality']
+    
+    if air_quality_data:
+        data = {
+            'city': air_quality_data.city,
+            'aqi': air_quality_data.aqi,
+            'category': air_quality_data.aqi_category,
+            'color': air_quality_data.aqi_color,
+            'pm25': air_quality_data.pm25,
+            'pm10': air_quality_data.pm10,
+            'o3': air_quality_data.o3,
+            'no2': air_quality_data.no2,
+            'so2': air_quality_data.so2,
+            'co': air_quality_data.co,
+            'recorded_at': air_quality_data.recorded_at.isoformat()
+        }
+        return JsonResponse(data)
+    
+    return JsonResponse({'error': 'Air quality data not available'}, status=404)
+
+@login_required
+def get_air_quality_history(request, city):
+    """API endpoint for air quality history"""
+    history = AirQualityData.objects.filter(
+        city__icontains=city
+    ).order_by('-recorded_at')[:24]
+    
+    history_data = []
+    for item in history:
+        history_data.append({
+            'aqi': item.aqi,
+            'category': item.aqi_category,
+            'pm25': item.pm25,
+            'recorded_at': item.recorded_at.isoformat()
+        })
+    
+    return JsonResponse({'history': history_data})
+
+@login_required
+def get_water_levels(request):
+    """API endpoint for all water levels"""
+    water_levels = WaterLevel.objects.all()
+    
+    levels_data = []
+    for level in water_levels:
+        levels_data.append({
+            'id': level.id,
+            'location_name': level.location_name,
+            'city': level.city,
+            'water_body_type': level.water_body_type,
+            'current_level': level.current_level,
+            'normal_level': level.normal_level,
+            'warning_level': level.warning_level,
+            'danger_level': level.danger_level,
+            'alert_status': level.alert_status,
+            'latitude': level.latitude,
+            'longitude': level.longitude,
+            'level_percentage': level.level_percentage,
+            'last_updated': level.last_updated.isoformat()
+        })
+    
+    return JsonResponse(levels_data, safe=False)
+
+@login_required
+def get_city_water_levels(request, city):
+    """API endpoint for city-specific water levels"""
+    water_levels = WaterLevel.objects.filter(city__icontains=city)
+    
+    levels_data = []
+    for level in water_levels:
+        levels_data.append({
+            'id': level.id,
+            'location_name': level.location_name,
+            'current_level': level.current_level,
+            'alert_status': level.alert_status,
+            'latitude': level.latitude,
+            'longitude': level.longitude,
+            'level_percentage': level.level_percentage
+        })
+    
+    return JsonResponse(levels_data, safe=False)
+
+@login_required
+@csrf_exempt
+def update_user_location(request):
+    """API endpoint to update user location"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            latitude = data.get('latitude')
+            longitude = data.get('longitude')
+            
+            if latitude and longitude:
+                profile, created = request.user.userprofile_set.get_or_create()
+                profile.latitude = latitude
+                profile.longitude = longitude
+                profile.save()
+                
+                return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+@csrf_exempt
+def check_username_availability(request):
+    """API endpoint to check username availability"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            
+            if username:
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                
+                available = not User.objects.filter(username=username).exists()
+                return JsonResponse({'available': available})
+        except Exception as e:
+            return JsonResponse({'available': False, 'error': str(e)})
+    
+    return JsonResponse({'available': False, 'error': 'Invalid request'})
+
+@csrf_exempt
+def check_email_availability(request):
+    """API endpoint to check email availability"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            email = data.get('email')
+            
+            if email:
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                
+                available = not User.objects.filter(email=email).exists()
+                return JsonResponse({'available': available})
+        except Exception as e:
+            return JsonResponse({'available': False, 'error': str(e)})
+    
+    return JsonResponse({'available': False, 'error': 'Invalid request'})
+
+@login_required
+def get_community_reports_map(request):
+    """API endpoint for community reports map data"""
+    from community.models import CommunityReport
+    
+    reports = CommunityReport.objects.filter(
+        latitude__isnull=False,
+        longitude__isnull=False
+    ).order_by('-created_at')[:50]
+    
+    reports_data = []
+    for report in reports:
+        reports_data.append({
+            'id': report.id,
+            'title': report.title,
+            'description': report.description,
+            'location': report.location,
+            'city': report.city,
+            'latitude': report.latitude,
+            'longitude': report.longitude,
+            'report_type': report.report_type,
+            'severity': report.severity,
+            'status': report.status,
+            'upvotes': report.upvotes,
+            'downvotes': report.downvotes,
+            'created_at': report.created_at.isoformat()
+        })
+    
+    return JsonResponse(reports_data, safe=False)
+
