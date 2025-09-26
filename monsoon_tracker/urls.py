@@ -23,10 +23,10 @@ from dashboard.views import home
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home, name='home'),
-    path('accounts/', include('apps.accounts.urls')),
-    path('dashboard/', include('apps.dashboard.urls')),
-    path('community/', include('apps.community.urls')),
-    path('api/', include('apps.dashboard.api_urls')),
+    path('accounts/', include('accounts.urls')),
+    path('dashboard/', include('dashboard.urls')),
+    path('community/', include('community.urls')),
+    path('api/', include('dashboard.urls')),
 ]
 
 if settings.DEBUG:

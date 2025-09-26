@@ -125,7 +125,7 @@ class EcoTip(models.Model):
         return self.title
 
 class UserAlert(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_alerts')
     alert_type = models.CharField(
         max_length=50,
         choices=[

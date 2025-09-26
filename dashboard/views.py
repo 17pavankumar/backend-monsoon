@@ -91,7 +91,7 @@ def weather_details(request):
         'forecast': forecast,
     }
     
-    return render(request, 'dashboard/weather_details.html', context)
+    return render(request, 'dashboard/dashboard.html', context)
 
 @login_required
 def air_quality_details(request):
